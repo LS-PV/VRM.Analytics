@@ -24,6 +24,6 @@ class QueryParamsBuilder:
 
         params = [self.assignment_id, self.number_of_days * -1] + self.source + [self.number_of_notes]
 
-        logger.info(f"Query building is success, {query}, {params}")
+        logger.info(f"Query building is success")
 
         return query, params

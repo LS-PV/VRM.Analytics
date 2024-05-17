@@ -15,7 +15,6 @@ app.logger.setLevel(logger.level)
 def assignment():
     try:
         data = request.get_json()
-        logger.info(f"Request data: {data}")
 
         validated_assignment_data = AssignmentData(data).validate_assignment_data()
 
@@ -29,10 +28,10 @@ def assignment():
         query, params = QueryParamsBuilder(assignment_id=assignment_id, number_of_days=number_of_days, number_of_notes=number_of_notes, source=source).build_query_params()
 
         connection = ConnectionManager()
-        instructions = connection.fetch_instructions(query=query, params=params, flag=flag)
+        instructions = connection.fetch_instructions(query=query, params=params, flag=flag, source=source)
 
         chat_bot = ChatGPTConnection()
-        response = chat_bot.fetch_summary(notes_source_data=instructions, line_count=summary_line_count)
+        response = chat_bot.fetch_summary(instructions=instructions, line_count=summary_line_count)
         
         logger.info("Sending response to user successfully")
         return jsonify({"data": response}), 200

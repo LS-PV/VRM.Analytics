@@ -1,5 +1,5 @@
 from vrmAnalytics.logging import logger
-from typing import Dict
+from typing import Dict, List
 from openai import OpenAI
 import os
 
@@ -16,32 +16,38 @@ class ChatGPTConnection:
     def __get_connection(self) -> None:
         if self.CONFIG == None:
             self.__get_details()
-        logger.info("GPT API is initiated")
         self.api_key = self.CONFIG['GPT_API_KEY']
         self.gpt = OpenAI(api_key=self.api_key)
+        logger.info("CHATGPT is initiated")
     
-    def fetch_summary(self, notes_source_data, line_count):
+    def fetch_summary(self, instructions: Dict[str, str], line_count: int) -> Dict[str, List[str]]:
         try:
             if self.gpt == None:
                 self.__get_connection()
 
-            prefix = f"Below are a list of notes, delimited by  ---------.  The first note below is the latest note. Can you summarize them in {line_count} bullet points, in chronological order. The first part of the summary paragraph should be the latest note."
+            prefix = f"""Below are a list of notes, delimited by ---------. The first note below is the latest note. Can you summarize them in {line_count} numbered points, in chronological order. The first part of the summary should be the latest note. Remove every special characters and ---------. The summary should be clean and structured, with each numbered point clearly separated by \n."""
 
-            response = []
+            data = {}
             
-            logger.info("Requesting GPT Summaries")
-            for note in notes_source_data:
-                instructions = prefix + note
-                chat_response = self.gpt.chat.completions.create(
+            logger.info("Feeding Notes to CHATGPT")
+            for source_key in instructions:
+                instruction = prefix + instructions[source_key]
+                summaries = self.gpt.chat.completions.create(
                     model="gpt-3.5-turbo",
                     messages=[
-                        {"role": "user", "content": instructions}
+                        {"role": "user", "content": instruction}
                     ]
                 )
+                data[source_key] = summaries.choices[0].message.content
+            logger.info("Generated Summaries from CHATGPT")
 
-                response.append(chat_response.choices[0].message.content)
+            response = {}
 
-            logger.info("Received Summaries from GPT")
+            for key in data:
+                response[key] = data[key].strip().split('\n')
+
+            print(response)
+
             return response
         
         except Exception as e:
